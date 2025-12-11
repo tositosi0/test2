@@ -388,24 +388,24 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         });
 
         s.bullets.forEach(b => {
+            const size = 4;
             ctx.save();
-            ctx.shadowBlur = 15;
+            ctx.translate(b.x, b.y);
+
+            // Glow effect
+            ctx.shadowBlur = 10;
             ctx.shadowColor = b.color;
 
-            const bulletGrad = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, 8);
-            bulletGrad.addColorStop(0, '#ffffff');
-            bulletGrad.addColorStop(0.4, b.color);
-            bulletGrad.addColorStop(1, b.color + '00');
-
-            ctx.fillStyle = bulletGrad;
+            // Bullet Sprite (Simple Pulse Ball)
+            ctx.fillStyle = b.color;
             ctx.beginPath();
-            ctx.arc(b.x, b.y, 8, 0, Math.PI * 2);
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
             ctx.fill();
 
+            // Core
             ctx.fillStyle = '#fff';
-            ctx.shadowBlur = 8;
             ctx.beginPath();
-            ctx.arc(b.x, b.y, 3, 0, Math.PI * 2);
+            ctx.arc(0, 0, size * 0.5, 0, Math.PI * 2);
             ctx.fill();
 
             ctx.restore();
@@ -413,98 +413,108 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         });
 
         s.enemies.forEach(e => {
-            const rotation = (Date.now() / 1000) % (Math.PI * 2);
-
             ctx.save();
             ctx.translate(e.x, e.y);
-            ctx.rotate(rotation);
 
-            const enemyGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, e.size * 1.5);
-            enemyGlow.addColorStop(0, e.color + 'aa');
-            enemyGlow.addColorStop(0.7, e.color + '40');
-            enemyGlow.addColorStop(1, 'transparent');
-            ctx.fillStyle = enemyGlow;
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = e.color;
-            ctx.beginPath();
-            ctx.arc(0, 0, e.size * 1.5, 0, Math.PI * 2);
-            ctx.fill();
+            // Enemy Sprite Logic
+            const pixelSize = e.size / 5;
+            const color = e.color;
 
-            ctx.fillStyle = e.color;
-            ctx.shadowBlur = 8;
-            ctx.beginPath();
-            const sides = e.type === 'tank' ? 4 : (e.type === 'fast' ? 3 : 6);
-            for (let i = 0; i < sides; i++) {
-                const angle = (i / sides) * Math.PI * 2;
-                const x = Math.cos(angle) * e.size;
-                const y = Math.sin(angle) * e.size;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = color;
+            ctx.fillStyle = color;
+
+            if (e.type === 'tank') {
+                // Tank Enemy (Square-ish, sturdy)
+                // [ x x x ]
+                // [ x x x ]
+                // [ x x x ]
+                ctx.fillRect(-e.size, -e.size, e.size * 2, e.size * 2);
+
+                // Eye
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-pixelSize, -pixelSize, pixelSize * 2, pixelSize * 2);
+            } else if (e.type === 'fast') {
+                // Fast Enemy (Arrow/Triangle)
+                ctx.beginPath();
+                ctx.moveTo(0, -e.size);
+                ctx.lineTo(e.size, e.size);
+                ctx.lineTo(-e.size, e.size);
+                ctx.closePath();
+                ctx.fill();
+
+                // Eye
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(0, 0, pixelSize * 1.5, 0, Math.PI * 2);
+                ctx.fill();
+
+            } else {
+                // Normal Enemy (Invader style)
+                //  x   x
+                //   xxx 
+                //  x x x
+                ctx.fillRect(-e.size, -e.size / 2, e.size * 2, e.size); // Body
+                ctx.fillRect(-e.size, -e.size, pixelSize * 2, pixelSize * 2); // Ear L
+                ctx.fillRect(e.size - pixelSize * 2, -e.size, pixelSize * 2, pixelSize * 2); // Ear R
+                ctx.fillRect(-e.size + pixelSize, e.size / 2, pixelSize * 2, pixelSize * 3); // Leg L
+                ctx.fillRect(e.size - pixelSize * 3, e.size / 2, pixelSize * 2, pixelSize * 3); // Leg R
+
+                // Eyes
+                ctx.fillStyle = '#000';
+                ctx.fillRect(-e.size / 2, -pixelSize, pixelSize, pixelSize);
+                ctx.fillRect(e.size / 2 - pixelSize, -pixelSize, pixelSize, pixelSize);
             }
-            ctx.closePath();
-            ctx.fill();
-
-            const coreGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, e.size * 0.5);
-            coreGrad.addColorStop(0, '#ffffff');
-            coreGrad.addColorStop(0.5, e.color);
-            coreGrad.addColorStop(1, e.color);
-            ctx.fillStyle = coreGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, e.size * 0.5, 0, Math.PI * 2);
-            ctx.fill();
 
             ctx.restore();
             ctx.shadowBlur = 0;
         });
 
-        const pulse = 1 + Math.sin(Date.now() / 300) * 0.06;
+        const pulse = 1 + Math.sin(Date.now() / 300) * 0.05;
         ctx.save();
         ctx.translate(s.player.x, s.player.y);
         ctx.scale(pulse, pulse);
+        if (s.player.facing < 0) ctx.scale(-1, 1); // Flip if moving left
 
-        const playerGlow = ctx.createRadialGradient(0, 0, 0, 0, 0, 22);
-        playerGlow.addColorStop(0, COLORS.player + '80');
-        playerGlow.addColorStop(0.6, COLORS.player + '40');
-        playerGlow.addColorStop(1, 'transparent');
-        ctx.fillStyle = playerGlow;
-        ctx.shadowBlur = 25;
+        // Player Ship Pixel Art (Retro Fighter)
+        // 16x16 grid approximation
+        const pSize = 3;
+
+        ctx.shadowBlur = 15;
         ctx.shadowColor = COLORS.player;
-        ctx.beginPath();
-        ctx.arc(0, 0, 22, 0, Math.PI * 2);
-        ctx.fill();
-
         ctx.fillStyle = COLORS.player;
-        ctx.shadowBlur = 12;
+
+        // Main Body
+        //    x
+        //   xxx
+        //  xxxxx
+        // xx x xx
         ctx.beginPath();
-        ctx.moveTo(0, -12);
-        ctx.lineTo(7, -4);
-        ctx.lineTo(7, 6);
-        ctx.lineTo(2, 9);
-        ctx.lineTo(-2, 9);
-        ctx.lineTo(-7, 6);
-        ctx.lineTo(-7, -4);
-        ctx.closePath();
+        // Nose
+        ctx.rect(-pSize, -5 * pSize, 2 * pSize, 2 * pSize);
+        // Fuselage
+        ctx.rect(-2 * pSize, -3 * pSize, 4 * pSize, 6 * pSize);
+        // Wings
+        ctx.rect(-5 * pSize, 0, 3 * pSize, 4 * pSize);
+        ctx.rect(2 * pSize, 0, 3 * pSize, 4 * pSize);
+        // Wing Tips
+        ctx.rect(-6 * pSize, 2 * pSize, pSize, 4 * pSize);
+        ctx.rect(5 * pSize, 2 * pSize, pSize, 4 * pSize);
         ctx.fill();
 
-        const shipCore = ctx.createRadialGradient(0, -2, 0, 0, -2, 5);
-        shipCore.addColorStop(0, '#ffffff');
-        shipCore.addColorStop(0.5, COLORS.player);
-        shipCore.addColorStop(1, COLORS.player);
-        ctx.fillStyle = shipCore;
-        ctx.shadowBlur = 10;
+        // Cockpit
+        ctx.fillStyle = '#fff';
         ctx.beginPath();
-        ctx.arc(0, -2, 5, 0, Math.PI * 2);
+        ctx.rect(-pSize, -onePixel(pSize), 2 * pSize, 2 * pSize);
         ctx.fill();
 
-        const enginePulse = 0.7 + Math.sin(Date.now() / 100) * 0.3;
-        ctx.fillStyle = `rgba(255, 255, 0, ${enginePulse})`;
-        ctx.shadowColor = '#ffff00';
-        ctx.shadowBlur = 12;
+        // Engine Fire
+        const engineFlicker = Math.random() > 0.5 ? 1 : 0.8;
+        ctx.fillStyle = `rgba(255, 200, 0, ${engineFlicker})`;
+        ctx.shadowColor = '#ffaa00';
         ctx.beginPath();
-        ctx.arc(-2, 7, 2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(2, 7, 2, 0, Math.PI * 2);
+        ctx.rect(-2 * pSize, 4 * pSize, pSize, 3 * pSize * engineFlicker);
+        ctx.rect(pSize, 4 * pSize, pSize, 3 * pSize * engineFlicker);
         ctx.fill();
 
         ctx.restore();
@@ -621,6 +631,10 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
     };
 
     const handleTouchStart = (e) => { const t = e.changedTouches[0], r = canvasRef.current.getBoundingClientRect(); g.current.joy = { active: true, sx: t.clientX - r.left, sy: t.clientY - r.top, x: t.clientX - r.left, y: t.clientY - r.top, dx: 0, dy: 0 }; };
+
+    // Helper for pixel centering
+    const onePixel = (s) => s * 2; // Simple offset helper
+
     const handleTouchMove = (e) => { if (!g.current.joy.active) return; const t = e.changedTouches[0], r = canvasRef.current.getBoundingClientRect(), cx = t.clientX - r.left, cy = t.clientY - r.top; let dx = cx - g.current.joy.sx, dy = cy - g.current.joy.sy; const d = Math.sqrt(dx * dx + dy * dy), max = 40; if (d > max) { dx = dx / d * max; dy = dy / d * max; } g.current.joy.dx = dx / max; g.current.joy.dy = dy / max; g.current.joy.x = g.current.joy.sx + dx; g.current.joy.y = g.current.joy.sy + dy; };
 
     return (
