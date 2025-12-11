@@ -77,7 +77,7 @@ function App() {
                 const nextStage = res.won ? playerData.stage + 1 : playerData.stage;
                 setPlayerData(p => ({ ...p, coins: p.coins + reward, stage: Math.max(p.stage, nextStage) }));
                 setScene('result');
-            }} />}
+            }} onAbort={() => setScene('home')} />}
             {scene === 'result' && <ResultScreen res={gameResult} onHome={() => setScene('home')} />}
         </div>
     );
@@ -141,7 +141,7 @@ function ResultScreen({ res, onHome }) {
     );
 }
 
-function GameScreen({ stage, baseStats, onEnd }) {
+function GameScreen({ stage, baseStats, onEnd, onAbort }) {
     const canvasRef = useRef(null);
     const requestRef = useRef();
     const startMaxHp = 100 * (1 + baseStats.hp * 0.25);
@@ -151,6 +151,7 @@ function GameScreen({ stage, baseStats, onEnd }) {
     const [lv, setLv] = useState(1);
     const [time, setTime] = useState(0);
     const [paused, setPaused] = useState(false);
+    const [pauseMenu, setPauseMenu] = useState(false);
     const [options, setOptions] = useState([]);
     const [coins, setCoins] = useState(0);
     const [weaponList, setWeaponList] = useState(['kunai']);
@@ -331,6 +332,7 @@ function GameScreen({ stage, baseStats, onEnd }) {
             g.current.passives[opt.id] = opt.lv;
             if (opt.id === 'maxhp') { setMaxHp(h => h * 1.2); setHp(h => h * 1.2); }
         }
+        setOptions([]);
         setPaused(false);
     };
 
@@ -635,26 +637,47 @@ function GameScreen({ stage, baseStats, onEnd }) {
                     <div className="hud-bar"><div className="hud-bar-fill exp-bar" style={{ width: `${Math.min(100, exp / g.current.nextExp * 100)}%` }}></div></div>
                     <div className="hud-bar"><div className="hud-bar-fill hp-bar" style={{ width: `${Math.min(100, hp / maxHp * 100)}%` }}></div></div>
                 </div>
+                {!paused && (
+                    <button
+                        className="pause-button"
+                        onClick={() => { setPaused(true); setPauseMenu(true); }}
+                    >
+                        ⏸️
+                    </button>
+                )}
             </div>
-            {paused && options.length > 0 && (
-                <div className="levelup-overlay">
-                    <div className="levelup-title">⚡ LEVEL UP!</div>
-                    <div className="levelup-options">
-                        {options.map((opt, i) => (
-                            <button key={i} onClick={() => selectOption(opt)} className={`levelup-card ${opt.lv === 1 ? 'levelup-card-new' : 'levelup-card-upgrade'} ${opt.itemType === 'weapon' ? 'card-weapon' : 'card-passive'}`}>
-                                <div className="levelup-card-header">
-                                    <div className="levelup-card-name">{opt.name}</div>
-                                    <span className={`levelup-badge ${opt.lv === 1 ? 'badge-new' : 'badge-upgrade'}`}>
-                                        {opt.lv === 1 ? '✨ NEW' : 'Lv.' + opt.lv}
-                                    </span>
-                                </div>
-                                <div className="levelup-card-desc">{opt.desc}</div>
-                            </button>
-                        ))}
+            {
+                pauseMenu && (
+                    <div className="pause-overlay">
+                        <div className="pause-title">PAUSED</div>
+                        <div className="pause-options">
+                            <button className="pause-btn resume" onClick={() => { setPauseMenu(false); setPaused(false); }}>▶ RESUME</button>
+                            <button className="pause-btn home" onClick={onAbort}>🏠 HOME</button>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+            {
+                paused && options.length > 0 && (
+                    <div className="levelup-overlay">
+                        <div className="levelup-title">⚡ LEVEL UP!</div>
+                        <div className="levelup-options">
+                            {options.map((opt, i) => (
+                                <button key={i} onClick={() => selectOption(opt)} className={`levelup-card ${opt.lv === 1 ? 'levelup-card-new' : 'levelup-card-upgrade'} ${opt.itemType === 'weapon' ? 'card-weapon' : 'card-passive'}`}>
+                                    <div className="levelup-card-header">
+                                        <div className="levelup-card-name">{opt.name}</div>
+                                        <span className={`levelup-badge ${opt.lv === 1 ? 'badge-new' : 'badge-upgrade'}`}>
+                                            {opt.lv === 1 ? '✨ NEW' : 'Lv.' + opt.lv}
+                                        </span>
+                                    </div>
+                                    <div className="levelup-card-desc">{opt.desc}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }
 

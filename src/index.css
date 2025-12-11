@@ -679,3 +679,101 @@ code {
 .shop-section::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 243, 255, 0.5);
 }
+
+/* === PAUSE MENU === */
+.pause-button {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  margin-left: auto;
+  pointer-events: auto;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+}
+
+.pause-button:hover {
+  background: rgba(0, 243, 255, 0.2);
+  border-color: #00f3ff;
+  transform: scale(1.1);
+}
+
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(8px);
+  animation: fade-in 0.2s ease-out;
+}
+
+.pause-title {
+  font-size: 32px;
+  font-weight: 900;
+  color: #fff;
+  margin-bottom: 40px;
+  letter-spacing: 5px;
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+  animation: scale-in 0.3s ease-out;
+}
+
+.pause-options {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 200px;
+}
+
+.pause-btn {
+  padding: 15px;
+  border-radius: 10px;
+  border: none;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  letter-spacing: 2px;
+  transition: all 0.2s;
+  animation: slide-in 0.3s ease-out backwards;
+}
+
+.pause-btn:hover {
+  transform: scale(1.05);
+}
+
+.pause-btn:active {
+  transform: scale(0.95);
+}
+
+.pause-btn.resume {
+  background: #00f3ff;
+  color: #000;
+  box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+}
+
+.pause-btn.resume:hover {
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.6);
+}
+
+.pause-btn.home {
+  background: transparent;
+  border: 2px solid #ff4444;
+  color: #ff4444;
+  animation-delay: 0.1s;
+}
+
+.pause-btn.home:hover {
+  background: rgba(255, 68, 68, 0.1);
+  box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+}
