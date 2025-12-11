@@ -630,16 +630,60 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         }
     };
 
-    const handleTouchStart = (e) => { const t = e.changedTouches[0], r = canvasRef.current.getBoundingClientRect(); g.current.joy = { active: true, sx: t.clientX - r.left, sy: t.clientY - r.top, x: t.clientX - r.left, y: t.clientY - r.top, dx: 0, dy: 0 }; };
-
     // Helper for pixel centering
     const onePixel = (s) => s * 2; // Simple offset helper
 
-    const handleTouchMove = (e) => { if (!g.current.joy.active) return; const t = e.changedTouches[0], r = canvasRef.current.getBoundingClientRect(), cx = t.clientX - r.left, cy = t.clientY - r.top; let dx = cx - g.current.joy.sx, dy = cy - g.current.joy.sy; const d = Math.sqrt(dx * dx + dy * dy), max = 40; if (d > max) { dx = dx / d * max; dy = dy / d * max; } g.current.joy.dx = dx / max; g.current.joy.dy = dy / max; g.current.joy.x = g.current.joy.sx + dx; g.current.joy.y = g.current.joy.sy + dy; };
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        const handleTouchStart = (e) => {
+            e.preventDefault();
+            const t = e.changedTouches[0];
+            const r = canvas.getBoundingClientRect();
+            g.current.joy = { active: true, sx: t.clientX - r.left, sy: t.clientY - r.top, x: t.clientX - r.left, y: t.clientY - r.top, dx: 0, dy: 0 };
+        };
+
+        const handleTouchMove = (e) => {
+            e.preventDefault();
+            if (!g.current.joy.active) return;
+            const t = e.changedTouches[0];
+            const r = canvas.getBoundingClientRect();
+            const cx = t.clientX - r.left, cy = t.clientY - r.top;
+            let dx = cx - g.current.joy.sx, dy = cy - g.current.joy.sy;
+            const d = Math.sqrt(dx * dx + dy * dy), max = 40;
+            if (d > max) { dx = dx / d * max; dy = dy / d * max; }
+            g.current.joy.dx = dx / max;
+            g.current.joy.dy = dy / max;
+            g.current.joy.x = g.current.joy.sx + dx;
+            g.current.joy.y = g.current.joy.sy + dy;
+        };
+
+        const handleTouchEnd = (e) => {
+            e.preventDefault();
+            g.current.joy.active = false;
+            g.current.joy.dx = 0;
+            g.current.joy.dy = 0;
+        };
+
+        canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+        canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+        canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+        return () => {
+            canvas.removeEventListener('touchstart', handleTouchStart);
+            canvas.removeEventListener('touchmove', handleTouchMove);
+            canvas.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, []);
+
+    const handleMouseDown = (e) => { const t = e; const r = canvasRef.current.getBoundingClientRect(); g.current.joy = { active: true, sx: t.clientX - r.left, sy: t.clientY - r.top, x: t.clientX - r.left, y: t.clientY - r.top, dx: 0, dy: 0 }; };
+    const handleMouseMove = (e) => { if (!e.buttons) return; if (!g.current.joy.active) return; const t = e; const r = canvasRef.current.getBoundingClientRect(), cx = t.clientX - r.left, cy = t.clientY - r.top; let dx = cx - g.current.joy.sx, dy = cy - g.current.joy.sy; const d = Math.sqrt(dx * dx + dy * dy), max = 40; if (d > max) { dx = dx / d * max; dy = dy / d * max; } g.current.joy.dx = dx / max; g.current.joy.dy = dy / max; g.current.joy.x = g.current.joy.sx + dx; g.current.joy.y = g.current.joy.sy + dy; };
+    const handleMouseUp = () => { g.current.joy.active = false; g.current.joy.dx = 0; g.current.joy.dy = 0; };
 
     return (
         <div className="game-screen">
-            <canvas ref={canvasRef} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={() => { g.current.joy.active = false; g.current.joy.dx = 0; g.current.joy.dy = 0; }} onMouseDown={(e) => handleTouchStart({ changedTouches: [e] })} onMouseMove={(e) => { if (e.buttons) handleTouchMove({ changedTouches: [e] }); }} onMouseUp={() => { g.current.joy.active = false; g.current.joy.dx = 0; g.current.joy.dy = 0; }} />
+            <canvas ref={canvasRef} onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} />
             <div className="hud">
                 <div className="hud-stats">
                     <div className="hud-stat">⏱️ {STAGE_DURATION - time}s</div>
