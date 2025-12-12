@@ -6,7 +6,7 @@ const GAME_HEIGHT = 640;
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.7';
+const VERSION = 'v1.0.8';
 const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
