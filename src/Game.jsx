@@ -6,7 +6,7 @@ const GAME_HEIGHT = 640;
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.1';
+const VERSION = 'v1.0.2';
 const MAX_GEMS = 50; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
@@ -141,9 +141,29 @@ function ResultScreen({ res, onHome }) {
     );
 }
 
+const IMAGES = {
+    player: '/assets/player.png',
+    enemy_normal: '/assets/enemy_normal.png',
+    enemy_fast: '/assets/enemy_fast.png',
+    enemy_tank: '/assets/enemy_tank.png',
+    bullet: '/assets/bullet.png',
+    gem_exp: '/assets/gem_exp.png',
+    gem_coin: '/assets/gem_coin.png',
+    bg: '/assets/bg.png',
+};
+
 function GameScreen({ stage, baseStats, onEnd, onAbort }) {
     const canvasRef = useRef(null);
     const requestRef = useRef();
+    const imgs = useRef({});
+
+    useEffect(() => {
+        Object.keys(IMAGES).forEach(k => {
+            const img = new Image();
+            img.src = IMAGES[k];
+            imgs.current[k] = img;
+        });
+    }, []);
     const startMaxHp = 100 * (1 + baseStats.hp * 0.25);
     const [hp, setHp] = useState(startMaxHp);
     const [maxHp, setMaxHp] = useState(startMaxHp);
