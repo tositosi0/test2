@@ -6,7 +6,7 @@ const GAME_HEIGHT = 640;
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.6';
+const VERSION = 'v1.0.7';
 const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
@@ -147,8 +147,8 @@ const IMAGES = {
     enemy_fast: '/assets/enemy_fast.png',
     enemy_tank: '/assets/enemy_tank.png',
     bullet: '/assets/bullet.png',
-    gem_exp: '/assets/gem_exp.png?v=2',
-    gem_coin: '/assets/gem_coin.png?v=2',
+    gem_exp: '/assets/gem_exp.png?v=3',
+    gem_coin: '/assets/gem_coin.png?v=3',
     bg: '/assets/bg.png',
 };
 
@@ -161,7 +161,28 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         Object.keys(IMAGES).forEach(k => {
             const img = new Image();
             img.src = IMAGES[k];
-            imgs.current[k] = img;
+            img.onload = () => {
+                if (k === 'gem_exp' || k === 'gem_coin') {
+                    // Create transparent version programmatically
+                    const c = document.createElement('canvas');
+                    c.width = img.width;
+                    c.height = img.height;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    const id = ctx.getImageData(0, 0, c.width, c.height);
+                    const d = id.data;
+                    for (let i = 0; i < d.length; i += 4) {
+                        // If pixel is darker than threshold, make it transparent
+                        if (d[i] < 40 && d[i + 1] < 40 && d[i + 2] < 40) {
+                            d[i + 3] = 0;
+                        }
+                    }
+                    ctx.putImageData(id, 0, 0);
+                    imgs.current[k] = c;
+                } else {
+                    imgs.current[k] = img;
+                }
+            };
         });
     }, []);
     const startMaxHp = 100 * (1 + baseStats.hp * 0.25);
