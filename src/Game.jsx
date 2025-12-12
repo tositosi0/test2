@@ -8,9 +8,10 @@ const WORLD_HEIGHT = 1500; // Adjusted from 2000
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.46';
+const VERSION = 'v1.0.47';
 const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
+const MAX_ENEMIES = 100; // 敵の上限（重さ対策）
 
 const COLORS = {
     bg: '#050510', player: '#00f3ff', exp: '#2ecc71', enemy: '#ff0055',
@@ -238,8 +239,8 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
                 const g2 = s.gems[j];
                 const dx = base.x - g2.x;
                 const dy = base.y - g2.y;
-                if (Math.abs(dx) < 30 && Math.abs(dy) < 30) {
-                    if (dx * dx + dy * dy < 900 && base.type === g2.type) {
+                if (Math.abs(dx) < 60 && Math.abs(dy) < 60) {
+                    if (dx * dx + dy * dy < 3600 && base.type === g2.type) {
                         base.val += g2.val;
                         base.x = (base.x + g2.x) / 2;
                         base.y = (base.y + g2.y) / 2;
@@ -275,7 +276,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
             const speed = enemyType === 'fast' ? (1.6 + difficulty * 0.05) * 1.3 : (1.6 + difficulty * 0.05);
             const color = enemyType === 'tank' ? '#ff4400' : (enemyType === 'fast' ? '#ff00ff' : COLORS.enemy);
 
-            if (ex > 0 && ex < WORLD_WIDTH && ey > 0 && ey < WORLD_HEIGHT) {
+            if (ex > 0 && ex < WORLD_WIDTH && ey > 0 && ey < WORLD_HEIGHT && s.enemies.length < MAX_ENEMIES) {
                 s.enemies.push({ x: ex, y: ey, hp, maxHp: hp, speed, color, size, type: enemyType });
             }
         }
@@ -724,6 +725,13 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
                         ⏸️
                     </button>
                 )}
+                <div style={{
+                    position: 'fixed', bottom: '5px', right: '5px',
+                    color: 'white', backgroundColor: 'rgba(0,0,0,0.7)', padding: '5px 10px',
+                    fontSize: '14px', zIndex: 10000, pointerEvents: 'none', borderRadius: '4px'
+                }}>
+                    {VERSION}
+                </div>
             </div>
             {
                 pauseMenu && (
