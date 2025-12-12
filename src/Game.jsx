@@ -3,6 +3,8 @@ import './index.css';
 
 const GAME_WIDTH = 360;
 const GAME_HEIGHT = 640;
+const WORLD_WIDTH = 2000;
+const WORLD_HEIGHT = 2000;
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
@@ -129,14 +131,16 @@ function HomeScreen({ data, onStart, onUpgrade, costFn, onReset }) {
 function ResultScreen({ res, onHome }) {
     return (
         <div className="result-screen">
-            <div className={res.won ? 'result-title result-win' : 'result-title result-lose'}>
-                {res.won ? '✨ STAGE CLEAR' : '💀 DEFEATED'}
+            <div className="result-screen">
+                <div className={res.won ? 'result-title result-win' : 'result-title result-lose'}>
+                    {res.won ? '✨ STAGE CLEAR' : '💀 DEFEATED'}
+                </div>
+                <div className="loot-card">
+                    <div className="loot-label">LOOT COLLECTED</div>
+                    <div className="loot-amount">💰 {res.coins} G</div>
+                </div>
+                <button onClick={onHome} className="home-button">◀ HOME</button>
             </div>
-            <div className="loot-card">
-                <div className="loot-label">LOOT COLLECTED</div>
-                <div className="loot-amount">💰 {res.coins} G</div>
-            </div>
-            <button onClick={onHome} className="home-button">◀ HOME</button>
         </div>
     );
 }
@@ -199,7 +203,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
 
     const g = useRef({
         frames: 0,
-        player: { x: GAME_WIDTH / 2, y: GAME_HEIGHT / 2, speed: 4.5, facing: 1, facingVector: { x: 0, y: -1 } },
+        player: { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2, speed: 4.5, facing: 1, facingVector: { x: 0, y: -1 } },
         joy: { active: false, x: 0, y: 0, dx: 0, dy: 0 },
         stats: { atk: 1 + baseStats.atk * 0.25, spd: 1, cd: 1, area: 1, magnet: 60 },
         weapons: { kunai: 1 }, passives: {},
@@ -232,24 +236,27 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         const difficulty = stage + time / 30;
         if (s.frames % Math.max(12, 45 - Math.floor(difficulty * 2)) === 0) {
             const edge = Math.floor(Math.random() * 4);
-            let ex, ey;
-            if (edge === 0) { ex = Math.random() * GAME_WIDTH; ey = -20; }
-            else if (edge === 1) { ex = GAME_WIDTH + 20; ey = Math.random() * GAME_HEIGHT; }
-            else if (edge === 2) { ex = Math.random() * GAME_WIDTH; ey = GAME_HEIGHT + 20; }
-            else { ex = -20; ey = Math.random() * GAME_HEIGHT; }
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 400;
+            const ex = s.player.x + Math.cos(angle) * dist;
+            const ey = s.player.y + Math.sin(angle) * dist;
+
             const enemyType = Math.random() < 0.3 ? 'fast' : (Math.random() < 0.5 ? 'tank' : 'normal');
             const size = enemyType === 'tank' ? 15 : (enemyType === 'fast' ? 9 : 12);
             const hp = enemyType === 'tank' ? (12 + difficulty * 8) * 1.5 : (12 + difficulty * 8);
             const speed = enemyType === 'fast' ? (1.6 + difficulty * 0.05) * 1.3 : (1.6 + difficulty * 0.05);
             const color = enemyType === 'tank' ? '#ff4400' : (enemyType === 'fast' ? '#ff00ff' : COLORS.enemy);
-            s.enemies.push({ x: ex, y: ey, hp, maxHp: hp, speed, color, size, type: enemyType });
+
+            if (ex > 0 && ex < WORLD_WIDTH && ey > 0 && ey < WORLD_HEIGHT) {
+                s.enemies.push({ x: ex, y: ey, hp, maxHp: hp, speed, color, size, type: enemyType });
+            }
         }
 
         if (s.joy.active) {
             const moveSpd = s.player.speed * (1 + (s.passives.speed || 0) * 0.1);
             s.player.x += s.joy.dx * moveSpd; s.player.y += s.joy.dy * moveSpd;
-            s.player.x = Math.max(10, Math.min(GAME_WIDTH - 10, s.player.x));
-            s.player.y = Math.max(10, Math.min(GAME_HEIGHT - 10, s.player.y));
+            s.player.x = Math.max(10, Math.min(WORLD_WIDTH - 10, s.player.x));
+            s.player.y = Math.max(10, Math.min(WORLD_HEIGHT - 10, s.player.y));
             if (s.joy.dx !== 0) s.player.facing = Math.sign(s.joy.dx);
             const len = Math.sqrt(s.joy.dx ** 2 + s.joy.dy ** 2);
             if (len > 0.1) s.player.facingVector = { x: s.joy.dx / len, y: s.joy.dy / len };
@@ -274,7 +281,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         s.bullets = s.bullets.filter(b => {
             b.x += b.vx; b.y += b.vy; b.life--;
             if (b.gravity) b.vy += b.gravity;
-            if (b.bounce) { if (b.x <= 0 || b.x >= GAME_WIDTH) b.vx *= -1; if (b.y <= 0 || b.y >= GAME_HEIGHT) b.vy *= -1; }
+            if (b.bounce) { if (b.x <= 0 || b.x >= WORLD_WIDTH) b.vx *= -1; if (b.y <= 0 || b.y >= WORLD_HEIGHT) b.vy *= -1; }
             let hit = false;
             for (let e of s.enemies) {
                 if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.size + 6) ** 2) {
@@ -283,7 +290,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
                     if (!b.pierce) { hit = true; break; }
                 }
             }
-            return b.life > 0 && !hit && (b.bounce || (b.x > -50 && b.x < GAME_WIDTH + 50 && b.y > -50 && b.y < GAME_HEIGHT + 50));
+            return b.life > 0 && !hit && (b.bounce || (b.x > -50 && b.x < WORLD_WIDTH + 50 && b.y > -50 && b.y < WORLD_HEIGHT + 50));
         });
 
         if (s.weapons.orbit) {
@@ -324,7 +331,6 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
                         const dist = (g1.x - g2.x) ** 2 + (g1.y - g2.y) ** 2;
                         if (dist < 30 ** 2) {
                             g1.val += g2.val;
-                            // Pull g1 slightly towards g2 visually
                             g1.x = (g1.x + g2.x) / 2;
                             g1.y = (g1.y + g2.y) / 2;
                             s.gems.splice(j, 1);
@@ -409,28 +415,38 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
     };
 
     const draw = (ctx, s) => {
-        // Draw Background
-        if (imgs.current.bg && imgs.current.bg.complete) {
-            ctx.drawImage(imgs.current.bg, 0, 0, GAME_WIDTH, GAME_HEIGHT);
-        } else {
-            ctx.fillStyle = COLORS.bg;
-            ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-        }
+        // Camera Calculation: keep player centered in viewport
+        const camX = Math.max(0, Math.min(WORLD_WIDTH - GAME_WIDTH, s.player.x - GAME_WIDTH / 2));
+        const camY = Math.max(0, Math.min(WORLD_HEIGHT - GAME_HEIGHT, s.player.y - GAME_HEIGHT / 2));
 
-        // Dark Overlay for better contrast
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        // Clear Screen
+        ctx.fillStyle = COLORS.bg;
         ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 
-        // Grid (Subtle)
-        const gridPulse = 0.3 + Math.sin(Date.now() / 1000) * 0.2;
-        ctx.strokeStyle = `rgba(0, 243, 255, ${gridPulse * 0.1})`;
-        ctx.lineWidth = 1;
-        for (let i = 0; i < GAME_WIDTH; i += 40) {
-            ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, GAME_HEIGHT); ctx.stroke();
+        ctx.save();
+        ctx.translate(-camX, -camY);
+
+        // Draw Background (Tiled)
+        if (imgs.current.bg && imgs.current.bg.complete) {
+            const ptrn = ctx.createPattern(imgs.current.bg, 'repeat');
+            ctx.fillStyle = ptrn;
+            ctx.fillRect(camX, camY, GAME_WIDTH, GAME_HEIGHT);
+        } else {
+            // Draw Grid if no BG
+            const gridPulse = 0.3 + Math.sin(Date.now() / 1000) * 0.2;
+            ctx.strokeStyle = `rgba(0, 243, 255, ${gridPulse * 0.1})`;
+            ctx.lineWidth = 1;
+            for (let i = 0; i < WORLD_WIDTH; i += 40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, WORLD_HEIGHT); ctx.stroke();
+            }
+            for (let i = 0; i < WORLD_HEIGHT; i += 40) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(WORLD_WIDTH, i); ctx.stroke();
+            }
         }
-        for (let i = 0; i < GAME_HEIGHT; i += 40) {
-            ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(GAME_WIDTH, i); ctx.stroke();
-        }
+
+        // Dark Overlay
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(camX, camY, GAME_WIDTH, GAME_HEIGHT);
 
         // Add glow for sprites
         ctx.globalCompositeOperation = 'lighter';
@@ -454,12 +470,12 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         s.gems.forEach(g => {
             const size = 10;
             const img = g.type === 'coin' ? imgs.current.gem_coin : imgs.current.gem_exp;
-            if (img && img.complete) {
+            // Fix: Check for image OR canvas validity. Correct logic to fix fallback to circles.
+            if (img && (img.complete || img instanceof HTMLCanvasElement)) {
                 ctx.save();
                 ctx.translate(g.x, g.y);
                 const p = Math.sin(Date.now() / 200 + g.x) * 0.2 + 1;
                 ctx.scale(p, p);
-                // Draw gem with lighter blending to remove black background
                 ctx.drawImage(img, -size, -size, size * 2, size * 2);
                 ctx.restore();
             } else {
@@ -489,7 +505,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
             if (img && img.complete) {
                 ctx.save();
                 ctx.translate(e.x, e.y);
-                const rot = e.type === 'fast' ? (e.x > s.player.x ? Math.PI : 0) : 0; // Simple rotation logic
+                const rot = e.type === 'fast' ? (e.x > s.player.x ? Math.PI : 0) : 0;
                 if (e.type === 'fast') ctx.rotate(rot);
 
                 // Pulsating hit effect
@@ -555,7 +571,6 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
                 ctx.translate(ox, oy);
                 ctx.rotate(t * 3);
 
-                // Simple shield bit using code for now (or could use bullet sprite)
                 const img = imgs.current.bullet;
                 if (img && img.complete) {
                     ctx.drawImage(img, -8, -8, 16, 16);
@@ -584,6 +599,9 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
             ctx.fillText(t.text, t.x, t.y);
             ctx.shadowBlur = 0;
         });
+
+        // Restore camera
+        ctx.restore();
 
         if (s.joy.active) {
             ctx.strokeStyle = 'rgba(255,255,255,0.25)';
