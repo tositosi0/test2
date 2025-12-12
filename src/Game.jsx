@@ -6,8 +6,8 @@ const GAME_HEIGHT = 640;
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.4';
-const MAX_GEMS = 50; // 経験値アイテムの上限
+const VERSION = 'v1.0.5';
+const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
 const COLORS = {
@@ -292,6 +292,27 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
             }
             return true;
         });
+
+        // Gem Merging Optimization
+        if (s.frames % 30 === 0) {
+            for (let i = 0; i < s.gems.length; i++) {
+                for (let j = i + 1; j < s.gems.length; j++) {
+                    const g1 = s.gems[i], g2 = s.gems[j];
+                    if (!g1 || !g2) continue;
+                    if (g1.type === g2.type) {
+                        const dist = (g1.x - g2.x) ** 2 + (g1.y - g2.y) ** 2;
+                        if (dist < 30 ** 2) {
+                            g1.val += g2.val;
+                            // Pull g1 slightly towards g2 visually
+                            g1.x = (g1.x + g2.x) / 2;
+                            g1.y = (g1.y + g2.y) / 2;
+                            s.gems.splice(j, 1);
+                            j--;
+                        }
+                    }
+                }
+            }
+        }
 
         s.gems = s.gems.filter(gm => {
             const d = Math.sqrt((gm.x - s.player.x) ** 2 + (gm.y - s.player.y) ** 2);
