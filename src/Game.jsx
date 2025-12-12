@@ -6,7 +6,7 @@ const GAME_HEIGHT = 640;
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.5';
+const VERSION = 'v1.0.6';
 const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
@@ -147,8 +147,8 @@ const IMAGES = {
     enemy_fast: '/assets/enemy_fast.png',
     enemy_tank: '/assets/enemy_tank.png',
     bullet: '/assets/bullet.png',
-    gem_exp: '/assets/gem_exp.png',
-    gem_coin: '/assets/gem_coin.png',
+    gem_exp: '/assets/gem_exp.png?v=2',
+    gem_coin: '/assets/gem_coin.png?v=2',
     bg: '/assets/bg.png',
 };
 
