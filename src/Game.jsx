@@ -3,12 +3,12 @@ import './index.css';
 
 const GAME_WIDTH = 360;
 const GAME_HEIGHT = 640;
-const WORLD_WIDTH = 2000;
-const WORLD_HEIGHT = 2000;
+const WORLD_WIDTH = 1500; // Adjusted from 2000
+const WORLD_HEIGHT = 1500; // Adjusted from 2000
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.42';
+const VERSION = 'v1.0.44';
 const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
@@ -203,7 +203,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
 
     const g = useRef({
         frames: 0,
-        player: { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2, speed: 4.5, facing: 1, facingVector: { x: 0, y: -1 } },
+        player: { x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2, speed: 4.5, facing: 1, facingVector: { x: 0, y: -1 }, size: 15 },
         joy: { active: false, x: 0, y: 0, dx: 0, dy: 0 },
         stats: { atk: 1 + baseStats.atk * 0.25, spd: 1, cd: 1, area: 1, magnet: 60 },
         weapons: { kunai: 1 }, passives: {},
@@ -212,6 +212,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
     });
 
     useEffect(() => {
+        if (!canvasRef.current) return;
         const ctx = canvasRef.current.getContext('2d');
         canvasRef.current.width = GAME_WIDTH; canvasRef.current.height = GAME_HEIGHT;
         const loop = () => {
