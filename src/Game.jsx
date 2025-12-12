@@ -8,7 +8,7 @@ const WORLD_HEIGHT = 1500; // Adjusted from 2000
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.44';
+const VERSION = 'v1.0.45';
 const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
@@ -524,12 +524,19 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         // Lightning Effects
         s.effects.forEach(e => {
             if (e.type === 'lightning') {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = '#00f3ff';
                 ctx.strokeStyle = '#fff';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
-                ctx.moveTo(e.x, e.y - 300); // Sky
-                ctx.lineTo(e.x, e.y);
+                let ly = e.y - 300;
+                ctx.moveTo(e.x, ly);
+                while (ly < e.y) {
+                    ly += Math.random() * 20 + 20;
+                    ctx.lineTo(e.x + (Math.random() - 0.5) * 30, Math.min(ly, e.y));
+                }
                 ctx.stroke();
+                ctx.shadowBlur = 0;
 
                 ctx.fillStyle = '#fff';
                 ctx.beginPath();
@@ -543,9 +550,8 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         ctx.translate(s.player.x, s.player.y);
         ctx.scale(pulse, pulse);
 
-        // Player
         if (imgs.current.player && imgs.current.player.complete) {
-            const pSize = 25;
+            const pSize = s.player.size || 15;
             ctx.drawImage(imgs.current.player, -pSize, -pSize, pSize * 2, pSize * 2);
         } else {
             ctx.fillStyle = COLORS.player;
