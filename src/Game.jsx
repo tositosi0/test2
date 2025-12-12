@@ -182,7 +182,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         joy: { active: false, x: 0, y: 0, dx: 0, dy: 0 },
         stats: { atk: 1 + baseStats.atk * 0.25, spd: 1, cd: 1, area: 1, magnet: 60 },
         weapons: { kunai: 1 }, passives: {},
-        enemies: [], bullets: [], gems: [], particles: [], texts: [],
+        enemies: [], bullets: [], gems: [], particles: [], texts: [], effects: [],
         cds: {}, nextExp: 10
     });
 
@@ -306,6 +306,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
 
         s.particles = s.particles.filter(p => { p.x += p.vx; p.y += p.vy; p.life--; return p.life > 0 });
         s.texts = s.texts.filter(t => { t.y -= 0.5; t.life--; return t.life > 0 });
+        s.effects = s.effects.filter(e => { e.life--; return e.life > 0; });
     };
 
     const fireWeapon = (s, k, conf, lv) => {
@@ -323,7 +324,9 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
             }
         } else if (conf.type === 'random' && s.enemies.length > 0) {
             const target = s.enemies[Math.floor(Math.random() * s.enemies.length)];
-            target.hp -= dmg; spawnTxt(s, target.x, target.y, dmg, COLORS.bullet); spawnPart(s, target.x, target.y, COLORS.bullet, 6);
+            target.hp -= dmg;
+            spawnTxt(s, target.x, target.y, dmg, COLORS.bullet);
+            s.effects.push({ type: 'lightning', x: target.x, y: target.y, life: 10 });
         } else if (conf.type === 'aura') {
             s.enemies.forEach(e => { if ((e.x - s.player.x) ** 2 + (e.y - s.player.y) ** 2 < (conf.range * s.stats.area) ** 2) { e.hp -= dmg; if (s.frames % 20 === 0) spawnTxt(s, e.x, e.y, Math.floor(dmg), '#0f0'); } });
         }
@@ -387,6 +390,25 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
             ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(GAME_WIDTH, i); ctx.stroke();
         }
 
+        // Add glow for sprites
+        ctx.globalCompositeOperation = 'lighter';
+
+        // Aura Visual
+        if (s.weapons.aura) {
+            const range = WEAPONS.aura.range * s.stats.area;
+            const alpha = 0.1 + Math.sin(Date.now() / 200) * 0.05;
+            const grad = ctx.createRadialGradient(s.player.x, s.player.y, 0, s.player.x, s.player.y, range);
+            grad.addColorStop(0, 'rgba(0, 255, 100, 0)');
+            grad.addColorStop(0.8, `rgba(0, 255, 100, ${alpha})`);
+            grad.addColorStop(1, 'rgba(0, 255, 100, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath(); ctx.arc(s.player.x, s.player.y, range, 0, Math.PI * 2); ctx.fill();
+
+            ctx.strokeStyle = `rgba(0, 255, 100, ${alpha * 2})`;
+            ctx.lineWidth = 2;
+            ctx.beginPath(); ctx.arc(s.player.x, s.player.y, range, 0, Math.PI * 2); ctx.stroke();
+        }
+
         s.gems.forEach(g => {
             const size = 10;
             const img = g.type === 'coin' ? imgs.current.gem_coin : imgs.current.gem_exp;
@@ -395,6 +417,7 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
                 ctx.translate(g.x, g.y);
                 const p = Math.sin(Date.now() / 200 + g.x) * 0.2 + 1;
                 ctx.scale(p, p);
+                // Draw gem with lighter blending to remove black background
                 ctx.drawImage(img, -size, -size, size * 2, size * 2);
                 ctx.restore();
             } else {
@@ -402,9 +425,6 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
                 ctx.beginPath(); ctx.arc(g.x, g.y, 5, 0, Math.PI * 2); ctx.fill();
             }
         });
-
-        // Add glow for sprites
-        ctx.globalCompositeOperation = 'lighter';
 
         s.bullets.forEach(b => {
             const img = imgs.current.bullet;
@@ -439,6 +459,23 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
             } else {
                 ctx.fillStyle = e.color;
                 ctx.beginPath(); ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2); ctx.fill();
+            }
+        });
+
+        // Lightning Effects
+        s.effects.forEach(e => {
+            if (e.type === 'lightning') {
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(e.x, e.y - 300); // Sky
+                ctx.lineTo(e.x, e.y);
+                ctx.stroke();
+
+                ctx.fillStyle = '#fff';
+                ctx.beginPath();
+                ctx.arc(e.x, e.y, 15 * (e.life / 10), 0, Math.PI * 2);
+                ctx.fill();
             }
         });
 
@@ -489,11 +526,13 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         }
 
         s.particles.forEach(p => {
+            ctx.globalCompositeOperation = 'lighter';
             ctx.globalAlpha = p.life / 10;
             ctx.fillStyle = p.color;
             ctx.beginPath(); ctx.arc(p.x, p.y, 3, 0, Math.PI * 2); ctx.fill();
         });
         ctx.globalAlpha = 1;
+        ctx.globalCompositeOperation = 'source-over';
 
         s.texts.forEach(t => {
             ctx.font = 'bold 12px Arial';
