@@ -8,7 +8,7 @@ const WORLD_HEIGHT = 1500; // Adjusted from 2000
 const MAX_WEAPONS = 6;
 const MAX_PASSIVES = 6;
 const STAGE_DURATION = 60;
-const VERSION = 'v1.0.45';
+const VERSION = 'v1.0.46';
 const MAX_GEMS = 40; // 経験値アイテムの上限
 const MAX_PARTICLES = 30; // パーティクルの上限
 
@@ -226,8 +226,35 @@ function GameScreen({ stage, baseStats, onEnd, onAbort }) {
         return () => cancelAnimationFrame(requestRef.current);
     }, [paused, hp, time]);
 
+    const mergeGems = (s) => {
+        if (s.gems.length < 10) return;
+        const merged = [];
+        const skip = new Set();
+        for (let i = 0; i < s.gems.length; i++) {
+            if (skip.has(i)) continue;
+            let base = s.gems[i];
+            for (let j = i + 1; j < s.gems.length; j++) {
+                if (skip.has(j)) continue;
+                const g2 = s.gems[j];
+                const dx = base.x - g2.x;
+                const dy = base.y - g2.y;
+                if (Math.abs(dx) < 30 && Math.abs(dy) < 30) {
+                    if (dx * dx + dy * dy < 900 && base.type === g2.type) {
+                        base.val += g2.val;
+                        base.x = (base.x + g2.x) / 2;
+                        base.y = (base.y + g2.y) / 2;
+                        skip.add(j);
+                    }
+                }
+            }
+            merged.push(base);
+        }
+        s.gems = merged;
+    };
+
     const update = (s) => {
         s.frames++;
+        if (s.frames % 15 === 0) mergeGems(s);
         if (s.frames % 60 === 0) setTime(t => t + 1);
         s.stats.atk = (1 + baseStats.atk * 0.25) * (1 + (s.passives.power || 0) * 0.1);
         s.stats.cd = Math.max(0.4, 1 - (s.passives.cd || 0) * 0.1);
